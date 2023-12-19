@@ -1,10 +1,5 @@
 package com.bridgelabz.javafileio.entity;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.time.LocalDate;
-
 public class EmployeePayrollData{
 
     private int id;
@@ -122,5 +117,41 @@ public class EmployeePayrollData{
                 ", start=" + startDate +
                 ", gender='" + gender + '\'' +
                 '}';
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public int getBasicPay() {
+        return basicPay;
+    }
+
+    public double getDeductions() {
+        return deductions;
+    }
+
+    public double getTaxablePay() {
+        return taxablePay;
+    }
+
+    public double getTax() {
+        return tax;
+    }
+
+    public double getNetPay() {
+        return netPay;
+    }
+
+    public String getGender() {
+        return String.valueOf(gender);
     }
 }

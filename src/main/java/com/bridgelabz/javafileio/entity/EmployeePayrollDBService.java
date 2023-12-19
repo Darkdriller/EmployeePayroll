@@ -191,6 +191,61 @@ public class EmployeePayrollDBService {
         }
     }
 
+    // UC-7: Ability to add a new employee to the payroll with transactions
+    public void addEmployeeToPayroll(EmployeePayrollData employeePayroll) throws EmployeePayrollException {
+        Connection connection = null;
+        try {
+            connection = getConnection();
+            connection.setAutoCommit(false);
+
+            insertIntoEmployeePayroll(employeePayroll, connection);
+
+            connection.commit();
+        } catch (SQLException e) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            throw new EmployeePayrollException("Error adding employee to payroll with transaction", e);
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void insertIntoEmployeePayroll(EmployeePayrollData employeePayroll, Connection connection) throws SQLException {
+        String insertQuery = "INSERT INTO employee_payroll (name, phone_number, address, department, " +
+                "basic_pay, deductions, taxable_pay, tax, net_pay, start, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        preparedStatement = connection.prepareStatement(insertQuery);
+        preparedStatement.setString(1, employeePayroll.getName());
+        preparedStatement.setString(2, employeePayroll.getPhoneNumber());
+        preparedStatement.setString(3, employeePayroll.getAddress());
+        preparedStatement.setString(4, employeePayroll.getDepartment());
+        preparedStatement.setInt(5, employeePayroll.getBasicPay());
+        preparedStatement.setDouble(6, employeePayroll.getDeductions());
+        preparedStatement.setDouble(7, employeePayroll.getTaxablePay());
+        preparedStatement.setDouble(8, employeePayroll.getTax());
+        preparedStatement.setDouble(9, employeePayroll.getNetPay());
+        preparedStatement.setString(10, employeePayroll.getStartDate());
+        preparedStatement.setString(11, employeePayroll.getGender());
+
+        int rowsAffected = preparedStatement.executeUpdate();
+
+        if (rowsAffected == 0) {
+            throw new SQLException("Adding employee to payroll failed, no rows affected.");
+        }
+
+        preparedStatement.close();
+    }
     private EmployeePayrollData mapResultSetToEmployeePayroll(ResultSet resultSet) throws SQLException {
         EmployeePayrollData employeePayroll = new EmployeePayrollData();
         employeePayroll.setId(resultSet.getInt("id"));
