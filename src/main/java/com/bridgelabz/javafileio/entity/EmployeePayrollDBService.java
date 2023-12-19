@@ -12,7 +12,33 @@ import java.util.Locale;
  */
 public class EmployeePayrollDBService {
 
+    // Singleton instance
+    private static EmployeePayrollDBService instance;
 
+    // Cached PreparedStatement
+    private static PreparedStatement preparedStatement;
+
+    // Private constructor for Singleton
+    public EmployeePayrollDBService() {
+        // Initialize the database connection and PreparedStatement
+        initializeDatabase();
+    }
+
+    // Method to get the singleton instance
+    public static EmployeePayrollDBService getInstance() {
+        if (instance == null) {
+            instance = new EmployeePayrollDBService();
+        }
+        return instance;
+    }
+    private void initializeDatabase() {
+        try {
+            Connection connection = this.getConnection();
+            preparedStatement = connection.prepareStatement("SELECT * FROM employee_payroll WHERE name = ?");
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle the exception appropriately
+        }
+    }
     public List<EmployeePayrollData> readData() throws SQLException {
         String sql = "SELECT * FROM employee_payroll;";
         List<EmployeePayrollData> employeePayrollList = new ArrayList<>();
@@ -47,6 +73,42 @@ public class EmployeePayrollDBService {
         return employeePayrollList;
     }
 
+    // Retrieve employee details from the database
+    public EmployeePayrollData retrieveEmployeeDetails(String employeeName) throws EmployeePayrollException {
+        try {
+            // Set the name parameter in the PreparedStatement
+            preparedStatement.setString(1, employeeName);
+
+            // Execute the query
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            // Check if employee exists
+            if (!resultSet.next()) {
+                throw new EmployeePayrollException("Employee not found: " + employeeName);
+            }
+
+            // Reuse the ResultSet to populate the EmployeePayroll object
+            EmployeePayrollData employeePayroll = new EmployeePayrollData();
+            employeePayroll.setId(resultSet.getInt("id"));
+            employeePayroll.setName(resultSet.getString("name"));
+            employeePayroll.setPhoneNumber(resultSet.getString("phone_number"));
+            employeePayroll.setAddress(resultSet.getString("address"));
+            employeePayroll.setDepartment(resultSet.getString("department"));
+            employeePayroll.setBasicPay(resultSet.getInt("basic_pay"));
+            employeePayroll.setDeductions(resultSet.getDouble("deductions"));
+            employeePayroll.setTaxablePay(resultSet.getDouble("taxable_pay"));
+            employeePayroll.setTax(resultSet.getDouble("tax"));
+            employeePayroll.setNetPay(resultSet.getDouble("net_pay"));
+            employeePayroll.setStartDate(resultSet.getString("start"));
+            employeePayroll.setGender(resultSet.getString("gender"));
+
+            return employeePayroll;
+        } catch (SQLException e) {
+            throw new EmployeePayrollException("Error retrieving employee payroll data", e);
+        }
+    }
+
+    //UC3
     public void updateEmployeeSalary(String employeeName, double newSalary) throws EmployeePayrollException {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
