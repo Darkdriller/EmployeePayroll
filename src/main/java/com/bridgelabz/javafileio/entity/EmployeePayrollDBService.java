@@ -47,8 +47,48 @@ public class EmployeePayrollDBService {
         return employeePayrollList;
     }
 
+    public void updateEmployeeSalary(String employeeName, double newSalary) throws EmployeePayrollException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = this.getConnection();
+            // Update salary in the database
+            String updateQuery = "UPDATE employee_payroll SET basic_pay = ? WHERE name = ?";
+            preparedStatement = connection.prepareStatement(updateQuery);
+            preparedStatement.setDouble(1, newSalary);
+            preparedStatement.setString(2, employeeName);
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new EmployeePayrollException("Employee not found: " + employeeName);
+            }
+            System.out.println("\nEmployee "+ employeeName+" salary updated successfully" );
+
+            List<EmployeePayrollData> payrollData = readData();
+            for (EmployeePayrollData it : payrollData){
+                if(it.getName().equals(employeeName))
+                    System.out.println(it);
+            }
+
+        } catch (SQLException e) {
+            throw new EmployeePayrollException("Error updating employee salary", e);
+        } finally {
+            // Close resources in the finally block
+            try {
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private Connection getConnection() throws SQLException{
-        String jdbcURL = "jdbc:mysql://localhost:3306/employee_payroll_service?useSSL=false";
+        String jdbcURL = "jdbc:mysql://localhost:3306/employee_payroll_service?allowPublicKeyRetrieval=true&useSSL=false";
         String userName = "root";
         String password = "toor";
         Connection con;

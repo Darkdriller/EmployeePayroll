@@ -6,6 +6,12 @@ import java.util.List;
 
 public class EmployeeService {
 
+    public void updateEmployeeSalary(String name, double salary, IOService ioService) throws EmployeePayrollException {
+        if(ioService.equals(IOService.DB_IO)){
+            new EmployeePayrollDBService().updateEmployeeSalary(name, salary);
+        }
+    }
+
     public enum IOService {CONSOLE_IO, FILE_IO, DB_IO, REST_IO}
 
     public List<EmployeePayrollData> employeePayrollList;
