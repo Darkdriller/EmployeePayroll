@@ -220,12 +220,12 @@ public class EmployeePayrollDBService {
             }
         }
     }
-
-    private void insertIntoEmployeePayroll(EmployeePayrollData employeePayroll, Connection connection) throws SQLException {
+    //returns employee ID
+    private int insertIntoEmployeePayroll(EmployeePayrollData employeePayroll, Connection connection) throws SQLException {
         String insertQuery = "INSERT INTO employee_payroll (name, phone_number, address, department, " +
                 "basic_pay, deductions, taxable_pay, tax, net_pay, start, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        preparedStatement = connection.prepareStatement(insertQuery);
+        preparedStatement = connection.prepareStatement(insertQuery,Statement.RETURN_GENERATED_KEYS);
         preparedStatement.setString(1, employeePayroll.getName());
         preparedStatement.setString(2, employeePayroll.getPhoneNumber());
         preparedStatement.setString(3, employeePayroll.getAddress());
@@ -243,9 +243,113 @@ public class EmployeePayrollDBService {
         if (rowsAffected == 0) {
             throw new SQLException("Adding employee to payroll failed, no rows affected.");
         }
+        try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                return generatedKeys.getInt(1);  // Return the generated employee ID
 
+            } else {
+                throw new SQLException("Creating employee failed, no ID obtained.");
+            }
+        }
+
+    }
+
+    // UC-8: Add Payroll Details when a new Employee is added
+    public void addEmployeeToPayrollDetails(EmployeePayrollData employeePayroll) throws EmployeePayrollException {
+        Connection connection = null;
+        try {
+            connection = getConnection();
+            connection.setAutoCommit(false); // Turn off auto-commit
+
+
+            // Insert into employee_payroll table
+            int emp_id = insertIntoEmployeePayroll(employeePayroll,connection);
+            employeePayroll.setId(emp_id);
+            // Insert into payroll_details table
+            insertIntoPayrollDetails(connection, employeePayroll);
+
+            // Commit the transaction if both inserts are successful
+            connection.commit();
+
+        } catch (SQLException e) {
+            // Roll back the transaction if an exception occurs
+            try {
+                if (connection != null) {
+                    connection.rollback();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            throw new EmployeePayrollException("Error adding employee to payroll", e);
+        } finally {
+            // Set back to auto-commit mode and close the connection
+            try {
+                if (connection != null) {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //inserting all stats in payroll_details table
+    private void insertIntoPayrollDetails(Connection connection, EmployeePayrollData employeePayroll) throws SQLException {
+        // Calculate derived fields
+        double deductions = employeePayroll.getBasicPay() * 0.2;
+        double taxablePay = employeePayroll.getBasicPay() - deductions;
+        double tax = taxablePay * 0.1;
+        double netPay = employeePayroll.getBasicPay() - tax;
+
+        String insertQuery = "INSERT INTO payroll_details (employee_id, deductions, taxable_pay, tax, net_pay) VALUES (?, ?, ?, ?, ?)";
+        PreparedStatement preparedStatement = connection.prepareStatement(insertQuery);
+
+        // Set parameters for payroll_details table
+        preparedStatement.setInt(1, employeePayroll.getId());
+        preparedStatement.setDouble(2, deductions);
+        preparedStatement.setDouble(3, taxablePay);
+        preparedStatement.setDouble(4, tax);
+        preparedStatement.setDouble(5, netPay);
+        System.out.println(preparedStatement);
+        preparedStatement.executeUpdate();
         preparedStatement.close();
     }
+
+    //display payroll details table in console
+    public void display_payroll_details(){
+        try {
+            // Assuming you have a connection to your database
+            Connection connection = getConnection();
+
+            // Assuming you have a Statement to execute the query
+            Statement statement = connection.createStatement();
+
+            // Execute the query to fetch all records from payroll_service table
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM payroll_details");
+
+            // Iterate through the result set and display each record
+            System.out.println("\npayroll_details db is as follows: ");
+            while (resultSet.next()) {
+                // Assuming you have appropriate column names, update them accordingly
+                int column1 = resultSet.getInt(1);
+                double column2 = resultSet.getDouble(2);
+                double column3 = resultSet.getDouble(3);
+                double column4 = resultSet.getDouble(4);
+                double column5 = resultSet.getDouble(5);
+
+
+                // Display the retrieved data
+                System.out.println(column1+"\t"+column2+"\t"+column3+"\t"+column4+"\t"+column5);
+            }
+
+            // Close resources
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private EmployeePayrollData mapResultSetToEmployeePayroll(ResultSet resultSet) throws SQLException {
         EmployeePayrollData employeePayroll = new EmployeePayrollData();
         employeePayroll.setId(resultSet.getInt("id"));

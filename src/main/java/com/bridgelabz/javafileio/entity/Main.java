@@ -23,12 +23,13 @@ public class Main{
             newEmployee.setStartDate("2022-01-01");
             newEmployee.setGender("M");
 
-            payrollService.addEmployeeToPayroll(newEmployee);
-            System.out.println("New employee added successfully: ");
+            payrollService.addEmployeeToPayrollDetails(newEmployee);
+            System.out.println("New employee added successfully and record updated as well in payroll_details table: ");
 
             for(EmployeePayrollData it:payrollService.readData()){
                 System.out.println(it);
             }
+            payrollService.display_payroll_details();
 
         } catch (EmployeePayrollException e) {
             e.printStackTrace();
