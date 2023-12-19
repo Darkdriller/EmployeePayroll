@@ -1,20 +1,19 @@
 package com.bridgelabz.javafileio.entity;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 
 public class EmployeeService {
 
-    public void run() throws IOException {
-        System.out.println("Employee Payroll Service");
+    public enum IOService {CONSOLE_IO, FILE_IO, DB_IO, REST_IO}
 
-        //create an instance of EmployeePayrollData
-        EmployeePayrollData employee = new EmployeePayrollData();
+    public List<EmployeePayrollData> employeePayrollList;
 
-        employee.readFromConsole();
-
-        System.out.println("\nEmployee Info: ");
-
-        employee.writeToConsole();
-
+    public List<EmployeePayrollData> readEmployeePayrollData(IOService ioService) throws SQLException {
+        if(ioService.equals(IOService.DB_IO)){
+                this.employeePayrollList = new EmployeePayrollDBService().readData();
+        }
+        return employeePayrollList;
     }
 }
